@@ -3,6 +3,13 @@ uuid = "35840eb9-573c-4b08-aec0-97a4171fc477"
 authors = ["Stephan Scholz"]
 version = "1.0.0-DEV"
 
+[deps]
+BellBruno = "2cc14a73-b19f-41ce-8eb5-0eba8210e186"
+BlockDiagonals = "0a1fb500-61f7-11e9-3c65-f5ef3456f9f0"
+FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
+Hestia = "75036a29-a2ca-4eb4-a964-4c35e636f9a9"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+
 [compat]
 julia = "1.8"
 
