@@ -1,6 +1,6 @@
 
 using BellBruno
-N_der = 20;              # Number of derivatives
+N_der = 10;              # Number of derivatives
 
 # Either create new Bell polynomials  ones
 bp = bell_poly(N_der);   # Create bell polynomials
@@ -115,7 +115,7 @@ function compute_derivatives(n_der, bc, bp, T, dt; w=2)
 end
 
 p_cntr = 2.0
-Tf = 10000;    # Final simulation time
+Tf = 1200;    # Final simulation time
 N_dt = 1000;
 dt = Tf/N_dt; # Sampling time
 h_data = compute_derivatives(N_der, bc, bp, Tf, dt, w=p_cntr);
@@ -144,7 +144,6 @@ function ref(t)
 end
 
 tgrid1 = dt : dt : Tf-dt; # Time grid
-ref_init = 300; # Intial Temperature
 
 #=
 diff_ref = 100; # (y_f - y_0) = 100 Kelvin
@@ -152,25 +151,17 @@ ref_data = ref_init .+ diff_ref*ref.(tgrid1)
 ref_raw = hcat(ref_data,(diff_ref*h_data)/ω_int)
 =#
 
-
-dref1 = 100; # (y_f - y_0) = 100 Kelvin
-dref2 = 200; # (y_f - y_0) = 100 Kelvin
-dref3 = 80; # (y_f - y_0) = 100 Kelvin
-ref01 = ref_init .+ dref1*ref.(tgrid1)
-ref02 = ref_init .+ dref2*ref.(tgrid1)
-ref03 = ref_init .+ dref3*ref.(tgrid1)
-
-dref_raw =mapreduce(i-> hcat(dref1*h_data[:,i],dref2*h_data[:,i],dref3*h_data[:,i])/ω_int, hcat,1:N_der+1)
-ref_raw = hcat(ref01, ref02, ref03, dref_raw)
+# ref_init = 300; # Intial Temperature
 
 
-L = 0.3; # Length of 1D rod
 
-###### ACHTUNG
-W = 0.02
+L = 0.1; # Length of 1D rod
+W = 0.05
+N₁ = 3;
 N₂ = 5;
-###### ACHTUNG
-
+Nc = N₁*N₂ 
+Δx₁ = L/N₁
+Δx₂ = W/N₂
 
 # Aluminium
 λ₁ = 40;  # Thermal conductivity
@@ -180,19 +171,10 @@ c = 400;  # Specific heat capacity
 α₁ = λ₁ / (ρ * c) # Diffusivity
 α₂ = λ₂ / (ρ * c) # Diffusivity
 
-N₁ = 3;
-Nc = N₁*N₂ 
-Δx₁ = L/N₁
-Δx₂ = W/N₂
 
-
-# -u[1] + u[2]
-# u[i-1] - 2u[i] + u[i]
-# u[N₁-1] - u[N₁]
-
+# Diffusion matrices
 D1 = zeros(Int64,Nc,Nc)
 D2 = zeros(Int64,Nc,Nc)
-
 for j=1:N₂
     di = (j-1)*N₁
     for i=2:N₁-1
@@ -202,10 +184,7 @@ for j=1:N₂
     D1[N₁+di,N₁-1+di:N₁+di] = [1,-1]
 end
 
-D1
 
-#D2[1+N₁,1:N₁:1+2N₁]
-1+(N₂-1)*N₁
 for i=1:N₁
     for j=2:N₂-1
         di = (j-1)*N₁
@@ -216,18 +195,32 @@ for i=1:N₁
     D2[i+(N₂-1)*N₁,i+(N₂-2)*N₁:N₁:i+(N₂-1)*N₁] = [1,-1]
 end
 
-a1 = 1 # α₁/Δx₁;
-a2 = 1 # α₂/Δx₂;
+a1 = α₁/(Δx₁^2);
+a2 = α₂/(Δx₂^2);
 
-# D = D1 + D2
+
 
 using LinearAlgebra
 A = a1*D1 + a2*D2
 b1 = (Δx₂*c*ρ)
-B = vcat(diagm(ones(Int64,N₁)), zeros(Int64,N₁*(N₂-1),N₁)) / b1
-C = hcat(zeros(Int64,N₁,N₁*(N₂-1)),diagm(ones(Int64,N₁)));
+# B = vcat(diagm(ones(Int64,N₁)), zeros(Int64,N₁*(N₂-1),N₁)) / b1
 
-C*A^(Nc)*B
+# Scenario: 
+# 1 = faulty actuators / with spatial characteristics  
+# 2 = faulty sensors / with spatial characteristics
+sc = 2
+
+if sc==1
+    Bd = diagm([1,0.9,0.8])/ b1;
+    Cd = diagm(ones(3))
+else
+    Bd = diagm(ones(3))/ b1 
+    Cd = diagm([1,0.9,0.8])
+end
+
+B = vcat(Bd, zeros(Int64,N₁*(N₂-1),N₁)) 
+
+C = hcat(zeros(Int64,N₁,N₁*(N₂-1)),Cd);
 
 # Original
 
@@ -238,31 +231,26 @@ Mu1 = inv(C*A^(N₂-1)*B)
 Mu = hcat(-Mu1*C*A^N₂ * Om_inv, Mu1)
 sum(Mu, dims=1)
 
+Θinit = 0
+Θdes = 100
+ref_init = Θinit*Cd*ones(3) # [310,300,320]
 
-# Modified
-Md1 = diagm(mapreduce(i-> a1^i*ones(N₁),vcat,0:N₂-1))
-Om1 = mapreduce(i-> C*(D1+(a2/a1)*D2)^i,vcat,0:N₂-1)
-# Omm = Md1*Om1
-Om_inv = inv(Om1)*inv(Md1)
+dref1 = Θdes-ref_init[1] # 90  # (y_f - y_0) = 100 Kelvin
+dref2 = Θdes-ref_init[2] # 100 # (y_f - y_0) = 100 Kelvin
+dref3 = Θdes-ref_init[3] # 80  # (y_f - y_0) = 100 Kelvin
+ref01 = ref_init[1] .+ dref1*ref.(tgrid1)
+ref02 = ref_init[2] .+ dref2*ref.(tgrid1)
+ref03 = ref_init[3] .+ dref3*ref.(tgrid1)
 
-Mu11 = B'*B*C*C' * (a1/a2)^(N₂-1) # inv(C*(D1+(a2/a1)*D2)^(N₂-1)*B) #/ a1^((N₂-1))
-Mu12 = C*(D1+(a2/a1)*D2)^N₂
-Mu13 = B'*B*C*C' * (1/a2)^(N₂-1)
-Mu_new = hcat(-a1*Mu11*Mu12*Om_inv, Mu13)
+dref_raw =mapreduce(i-> hcat(dref1*h_data[:,i],dref2*h_data[:,i],dref3*h_data[:,i])/ω_int, hcat,1:N_der+1)
+ref_mimo = hcat(ref01, ref02, ref03, dref_raw)
 
-# scatter((Mu-Mu_new)[1,1:15])
-# err1 = sum(Mu, dims=1) - sum(Mu_new, dims=1)
-# scatter(log10.(abs.(err1[1,1:end])))
 
-ref_mimo = ref_raw # = mapreduce(i->repeat(ref_raw[:,i],1,N₁), hcat, 1:N₂+1)'
 u_raw = (Mu*ref_mimo[:,1:Nc+N₁]')'
-#u_raw2 = (Mu_new*ref_mimo)'
 
+# using Plots
+# plot(u_raw)
 
-using Plots
-plot(u_raw[:,1])
-
-plot(u_raw2[:,1])
 
 function input_signal(t,u_data)
     if t <= 0
@@ -297,23 +285,67 @@ function heat_eq!(dx,x,p,t)
     dx .= A*x + B*u_in # B[:,1]*1 + B[:,2]*2 + B[:,3]*3 #*u_in
 end
 
-
-const ts = Tf/60   # Time step width
+const Nts = 40;
+const ts = Tf/Nts   # Time step width
 
 # Simulation without optimization
 using OrdinaryDiffEq
 
-x0 = 300 * ones(Nc) # Intial values
+x0 = Θinit * ones(Nc) # repeat(ref_init,N₂) # 300 * ones(Nc) # Intial values
 tspan = (0.0, Tf)   # Time span
 alg = KenCarp4()    # Numerical integrator
 
 prob = ODEProblem(heat_eq!,x0,tspan)
 sol = solve(prob,alg, saveat = ts)
 
-using Plots
+#=
+plot(sol[N₁*(N₂-1)+1:Nc,:]')
+yout = C*Array(sol)
+plot(sol.t, yout')
 plot(sol)
+=#
+yout = C*Array(sol)
 
-plot(sol[end-2:end,:]')
+using CairoMakie
 
-dx0 = similar(x0)
-heat_eq!(dx0,x0,0,0)       
+path2folder = "results/figures/controlled/"
+filename = path2folder*"fbc_2d_approx_scenario_"*string(sc)*".pdf"
+
+begin
+    input_data = zeros(Nts, N₁)
+    input_data = mapreduce(t->hcat(input_signal(t,u_raw[:,1]),input_signal(t,u_raw[:,2]),input_signal(t,u_raw[:,3])),vcat,sol.t);
+    input_data = Float64.(input_data / 1e4)
+    # sol_data = hcat(sol[1,:],sol[N₁*(round(Int64,N₂/2)-1)+1,:],sol[N₁*(N₂-1)+1,:]) # hcat(sol[1,:],sol[2N₁+1,:],sol[4N₁+1,:])
+    sol_data = sol[N₁*(N₂-1)+1:Nc,:]'
+    
+
+    # f = Figure(size=(1300,400),fontsize=26)
+    f = Figure(size=(600,900),fontsize=26)
+
+    ax1 = Axis(f[1, 1], xlabel = "", ylabel = L"Input $\times 10^4$", 
+    xlabelsize = 30,  ylabelsize = 30,
+    xgridstyle = :dash, ygridstyle = :dash,)
+
+    ax1.xticks = 0 : Tf/4 : Tf;
+    ax1.yticks = -4 : 2 : 12;
+    #ax1.yticks = -10 : 5 : 20;
+    lines!(sol.t, input_data[:,1]; linestyle = :solid, linewidth = 5 , label = "Input 1")
+    lines!(sol.t, input_data[:,2]; linestyle = :dash, linewidth = 5, label = "Input 2")
+    lines!(sol.t, input_data[:,3]; linestyle = :dot, linewidth = 5, label = "Input 3")
+    axislegend(; position = :lt, backgroundcolor = (:grey90, 0.1), labelsize=30);
+
+
+    ax2 = Axis(f[2, 1], xlabel = "Time t in [s]", ylabel = "Temperature", 
+                xlabelsize = 30,  ylabelsize = 30,
+                xgridstyle = :dash, ygridstyle = :dash,)
+
+    ax2.xticks = 0 : Tf/4 : Tf;
+    ax2.yticks = 0 : 25 : 125;
+    lines!(sol.t, sol_data[:,1]; linestyle = :solid, linewidth = 5, label = L"$i=N_{c}-2$")
+    lines!(sol.t, sol_data[:,2]; linestyle = :dash,  linewidth = 5, label = L"$i=N_{c}-1$")
+    lines!(sol.t, sol_data[:,3]; linestyle = :dot,   linewidth = 5, label = L"$i=N_{c}$")
+    axislegend(; position = :lt, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    f  
+    save(filename, f, pt_per_unit = 1)   
+end
+

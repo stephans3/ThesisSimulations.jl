@@ -8,7 +8,9 @@ BellBruno = "2cc14a73-b19f-41ce-8eb5-0eba8210e186"
 BlockDiagonals = "0a1fb500-61f7-11e9-3c65-f5ef3456f9f0"
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
 Hestia = "75036a29-a2ca-4eb4-a964-4c35e636f9a9"
+NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
 julia = "1.8"
