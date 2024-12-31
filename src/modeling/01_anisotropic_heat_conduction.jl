@@ -34,28 +34,35 @@ begin
     data0 = reshape(sol[1], Nx, Ny)
     data1 = reshape(sol[6], Nx, Ny)
     data2 = reshape(sol[11], Nx, Ny)
+
     
+    xgrid = 0 : L/(Nx-1) : L
+    ygrid = 0 : W/(Ny-1) : W
+    mm_scale = 100;
+    xgrid = mm_scale*xgrid
+    ygrid = mm_scale*ygrid
+
     f = Figure(size=(1300,400),fontsize=26)
-    ax1 = Axis(f[1, 1], title="Initial", xlabelsize = 30, ylabelsize = 30)
+    ax1 = Axis(f[1, 1], title="Initial", xlabel="Length in [mm]", ylabel="Width in [mm]", xlabelsize = 30, ylabelsize = 30)
     tightlimits!(ax1)
     #hidedecorations!(ax1)
-    contourf!(ax1, xgrid, ygrid, data0, levels = range(0.0, 1.01, length = 3))
+    contourf!(ax1, xgrid, ygrid, data0, colormap=:plasma, levels = range(0.0, 1.01, length = 3))
 
-    ax1.xticks = [0, L/2, L];
-    ax1.yticks = [0, W/2, W];
+    ax1.xticks = mm_scale*[0, L/2, L];
+    ax1.yticks = mm_scale*[0, W/2, W];
 
-    ax2 = Axis(f[1, 2], title="Proceeding", xlabelsize = 30, ylabelsize = 30)
+    ax2 = Axis(f[1, 2], title="Proceeding", xlabel="Length in [mm]", xlabelsize = 30, ylabelsize = 30)
     hideydecorations!(ax2)
     tightlimits!(ax2)
-    ax2.xticks = [L/2, L];
-    contourf!(ax2, xgrid, ygrid, data1, levels = range(0.0, 1.01, length = 20))
+    ax2.xticks = mm_scale*[L/2, L];
+    contourf!(ax2, xgrid, ygrid, data1, colormap=:plasma, levels = range(0.0, 1.01, length = 20))
 
-    ax3 = Axis(f[1, 3], title="Final", xlabelsize = 30, ylabelsize = 30)
+    ax3 = Axis(f[1, 3], title="Final", xlabel="Length in [mm]", xlabelsize = 30, ylabelsize = 30)
     hideydecorations!(ax3)
     tightlimits!(ax3)
-    ax3.xticks = [L/2, L];
+    ax3.xticks = mm_scale*[L/2, L];
 
-    co = contourf!(ax3, xgrid, ygrid, data2, levels = range(0.0, 1.01, length = 20))
+    co = contourf!(ax3, xgrid, ygrid, data2, colormap=:plasma, levels = range(0.0, 1.01, length = 20))
     Colorbar(f[1, 4], co)
     f    
 
