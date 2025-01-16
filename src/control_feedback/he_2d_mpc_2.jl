@@ -12,6 +12,11 @@ Nc = N₁*N₂
 Δx₁ = L/N₁
 Δx₂ = W/N₂
 
+#=
+α = λ₂/(ρ*c)
+t_diff = (W^2)/α
+=#
+
 
 using Hestia 
 property = StaticAnisotropic([λ₁,λ₂], ρ,c)
@@ -153,11 +158,14 @@ end
 
 N_mpc_samples = 10
 p_data_store = zeros(3,N_mpc_samples);
-pinit = 8*ones(3*N_mpc)
+
+u_init_av = (942 / (3*sum(actuator_char[:,1])*Δx₁));
+pinit = log(u_init_av)*ones(3*N_mpc) # 8*ones(3*N_mpc)
 
 loss_optim(pinit,[],prob_orig)
 
 using Optimization, OptimizationOptimJL, ForwardDiff
+
 
 prob_ode = remake(prob_orig)
 loss_fun(u,p)  = loss_optim(u,p,prob_ode)
@@ -176,23 +184,30 @@ for n=1:N_mpc_samples
     opt_prob = remake(opt_prob; f=optf, u0=p_new)
 end
 
+p_opt_data = p_data_store
+
 #=
+# pinit = 8*ones(3*N_mpc)
 p_opt_data = [
 9.51674  8.69653  8.88635  8.63213  8.83793  8.74208  8.79865  8.75205  8.79137  8.77228
  9.18024  7.97067  7.57852  7.59994  7.82952  7.81358  7.83333  7.82207  7.84787  7.84244
  9.51674  8.69653  8.88635  8.63213  8.83793  8.74208  8.79865  8.75205  8.79137  8.77228]
 =#
 
-exp.(p_data_store)
+#=
+# u_init_av = (942 / (3*sum(actuator_char[:,1])*Δx₁));
+# pinit = log(u_init_av)*ones(3*N_mpc)
+  p_opt_data = [9.30711  9.00171  8.64495  8.84113  8.7703   8.77578  8.77755  8.77696  8.77679  8.7753
+     9.07901  7.75712  7.34858  7.6263   7.82564  7.82881  7.83985  7.85068  7.85308  7.85702
+     9.30711  9.00171  8.64495  8.84113  8.7703   8.77578  8.77755  8.77696  8.77679  8.7753]
+=#
 
 
+#exp.(p_data_store)
 p_store_vec = exp.(reshape(p_data_store,3*N_mpc_samples))
 
 
-
-
-
-Tf = t_mpc*N_mpc_samples;  #60 # 1200;
+Tf = t_mpc*N_mpc_samples; 
 tspan = (0.0, Tf)
 θ₀ = 500;
 θinit = θ₀*ones(Ntotal)
@@ -201,64 +216,124 @@ t_samp = 1.0
 alg = KenCarp5()
 prob_demo = ODEProblem(heat_conduction!,θinit,tspan)
 sol_demo = solve(prob_demo,alg,p=p_store_vec, saveat=t_samp)
-
-using Plots
-plot(sol_demo)
+θsol = Array(sol_demo)
 
 
-temp22 = (C*Array(sol_demo))'
-plot(temp22,legend=false)
+n_rep = round(Int64,t_mpc / t_samp)
+u1_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_data_store[1,:])
+u2_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_data_store[2,:])
+udata = hcat(u1_in,u2_in,u1_in)
 
 
+using CairoMakie
+path2folder = "results/figures/controlled/feedback/"
+begin
+    filename = path2folder*"mpc_input.pdf"
+
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = "Time in [s]", ylabel = L"Input $\times 10^{3}$", xlabelsize = 30, ylabelsize = 30,
+    xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1)
+    
+    ax1.xticks = collect(0:60:300)
+    scale = 1e-3;
+    tgrid = sol_demo.t[1:end-1]
+    lines!(tgrid, scale*udata[:,1], linestyle = :solid,  linewidth = 5, label="Actuator 1")
+    lines!(tgrid, scale*udata[:,2], linestyle = :dash,  linewidth = 5, label="Actuator 2")
+
+    axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    f
+
+    save(filename, f, pt_per_unit = 1)   
+end
 
 
+begin
+    yout = C*θsol
+    filename = path2folder*"mpc_output.pdf"
+
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = "Time in [s]", ylabel = L"Output in [K] $~$", xlabelsize = 30, ylabelsize = 30, limits = (nothing, (499.2, 500.05)),
+    xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,)
+    
+    scale = 1;
+    tgrid = sol_demo.t[1:end]
+    lines!(tgrid, scale*yout[1,:], linestyle = :dot,  linewidth = 5, label="Sensor 1")
+    lines!(tgrid, scale*yout[2,:], linestyle = :dash,  linewidth = 5, label="Sensor 2")
+
+    ax1.xticks = collect(0:60:300)
+    ax1.yticks = [499.2, 499.4, 499.6, 499.8, 500];
+    axislegend(; position = :rb, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    f
+    
+    save(filename, f, pt_per_unit = 1)   
+end
 
 
+# Emitted Power
+
+n_ts = length(sol_demo.t)
+θsol_2d = reshape(θsol, N₁,N₂,n_ts)
+ϕem_W = map(θ-> emit(θ,emission), θsol_2d[1,1:N₂,:])
+ϕem_E = map(θ-> emit(θ,emission), θsol_2d[N₁,1:N₂,:])
+ϕem_N = map(θ-> emit(θ,emission), θsol_2d[1:N₁,N₂,:])
+
+Pem_W = Δx₂*sum(ϕem_W,dims=1)[:]
+Pem_E = Δx₂*sum(ϕem_E,dims=1)[:]
+Pem_N = Δx₁*sum(ϕem_N,dims=1)[:]
+
+Pem = Pem_W + Pem_E + Pem_N
+
+# Approx. emitted power
+# Pem_approx = L*emit(500,emission) + 2*W*emit(500,emission)
+
+udata = hcat(u1_in,u2_in,u1_in)
 
 
+# Supplied power
+Pin = Δx₁*sum(vcat(actuator_char, zeros(N₁*(N₂-1),num_actuators))*udata',dims=1)[:]
 
 
-prob_ode = remake(prob_orig)
-loss_fun(u,p)  = loss_optim(u,p,prob_ode)
-loss_fun(pinit, [])
+begin
+    filename = path2folder*"mpc_power.pdf"
 
-optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = "Time in [s]", ylabel = L"Power in [W] $~$", xlabelsize = 30, ylabelsize = 30, limits = (nothing, (750, 2100)),
+    xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,)
+    
+    scale = 1;
+    tgrid = sol_demo.t[1:end-1]
+    lines!(tgrid, scale*abs.(Pem[1:end-1]), linestyle = :solid,  linewidth = 5, label="Abs. Emitted")
+    lines!(tgrid, scale*Pin, linestyle = :dash,  linewidth = 5, label="Supplied")
 
-#lower_bounds = zeros(3*N_mpc) #-Inf*ones(3,Nmpc)
-#upper_bounds = Inf*ones(3*N_mpc)#20ones(3,Nmpc)
+    ax1.yticks = collect(750:250:2000) # [0, 200, 400, 600, 800, 1000];
+    ax1.xticks = collect(0:60:300)
+    # lines!(num_iterations, pars_data[:,1], linestyle = :dash,  linewidth = 5)
+    # lines!(num_iterations, pars_data[:,2], linestyle = :dash,  linewidth = 5)
+    axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    f
 
-opt_prob = OptimizationProblem(optf, pinit, [0])#, lb=lower_bounds, ub=upper_bounds)
-p_opt = Optimization.solve(opt_prob, ConjugateGradient(), callback=callback, maxiters=3)
-sol_temp = solve(prob_ode,alg,p=exp.(Array(p_opt)), saveat=t_samp)
-
-prob_ode = remake(prob_ode; u0 = sol_temp[:,end])
-p_data_store[:,1] = Array(p_opt)[1:3,1]
-
-loss_fun(u,p)  = loss_optim(u,p,prob_ode)
-optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
-
-p_opt_data = Array(p_opt)
-p_init_new = vcat(p_opt_data[4:9],p_opt_data[7:9])
-opt_prob = remake(opt_prob; f=optf, u0=p_init_new)
-
-#loss_optim(p_init_new,[],prob_ode)
-
-p_opt2 = Optimization.solve(opt_prob, ConjugateGradient(), callback=callback, maxiters=3)
-sol_temp = solve(prob_ode,alg,p=p=exp.(Array(p_opt2)), saveat=t_samp)
-
-exp.(Array(p_opt2))
+    save(filename, f, pt_per_unit = 1)   
+end
 
 
-p_opt_data2 = Array(p_opt2)
-(1e-7)*sum(abs2, p_opt_data[:,1:end-1] - p_opt_data[:,2:end])/((N_mpc-1)*3)
-(1e-7)*sum(abs2, p_opt_data2[:,1:end-1] - p_opt_data2[:,2:end])/((N_mpc-1)*3)
+x1grid = Δx₁/2 : Δx₁ : L
+x2grid = Δx₂/2 : Δx₂ : W
+begin
+    data = θsol_2d[:,:,end]
+    filename = path2folder*"mpc_temp_contour.pdf"
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = L"Length $x_{1}$ in [cm]", ylabel = L"Width $x_{2}$ in [cm]", xlabelsize = 30, ylabelsize = 30)
+    tightlimits!(ax1)
+    # hidedecorations!(ax1)
+    x1grid_cm = 100*x1grid
+    x2grid_cm = 100*x2grid
+    co = contourf!(ax1, x1grid_cm, x2grid_cm, data, colormap=:plasma, levels = 498:0.5:504) #levels = range(0.0, 10.0, length = 20))
+    ax1.xticks = 0 : 5 : 30;
+    ax1.yticks = 0 : 1 : 5;
+    Colorbar(f[1, 2], co)
+    #Colorbar(f[1, 2], co ,  ticks = [300, 301, 302])
+    f    
 
+    save(filename, f, pt_per_unit = 1)   
+end
 
-(1e-2)*(p_opt_data2[:,1] - p_opt_data2[:,2])
-(1e-3)*(p_opt_data2[:,2] - p_opt_data2[:,3])
-
-
-using Plots
-plot(sol_temp,legend=false)
-temp22 = (C*Array(sol_temp))'
-plot(temp22,legend=false)

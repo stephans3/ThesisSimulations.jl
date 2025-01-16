@@ -37,6 +37,52 @@ base_path = "results/figures/modeling/"
 
 using CairoMakie
 
+
+begin
+    fig1 = Figure(size=(800,400),fontsize=26)
+    data10 =  sol[1][1:N]
+    data11 =  sol[6][1:N]
+    data12 =  sol[end][1:N]
+    ax1 = Axis(fig1[1, 1], xlabel = "Position x in [cm]", ylabel = "Temperature in [K]", 
+    xlabelsize = 30, ylabelsize = 30,limits = (nothing, (280, 330))) 
+
+
+    #ax1.xticks = Nx_arr;
+    #ax1.yticks = -3: 1 : 3;
+    xscale = 100;
+    lines!(ax1, xscale*xgrid, data10;linestyle = :dot, linewidth = 5, label = L"$t=0$ (initial)")
+    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label = L"$t=\frac{T_{f}}{2}$ (proceeding)")
+    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"$t=T_{f}$ (final)")
+    axislegend(ax1 ; position = :rt, backgroundcolor = (:grey90, 0.1));
+
+    fig1
+    save(base_path*"heat_supply_vs_emission_1.pdf", fig1, pt_per_unit = 1)    
+end
+
+
+begin
+    fig1 = Figure(size=(800,400),fontsize=26)
+    data10 =  sol[1][N+1:2N]
+    data11 =  sol[6][N+1:2N]
+    data12 =  sol[end][N+1:2N]
+
+    ax1 = Axis(fig1[1, 1], xlabel = "Position x in [cm]", ylabel = "Temperature in [K]", 
+    xlabelsize = 30, ylabelsize = 30,limits = (nothing, (280, 330))) 
+
+
+    #ax1.xticks = Nx_arr;
+    #ax1.yticks = -3: 1 : 3;
+    xscale = 100;
+    lines!(ax1, xscale*xgrid, data10;linestyle = :dot, linewidth = 5, label = L"$t=0$ (initial)")
+    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label = L"$t=\frac{T_{f}}{2}$ (proceeding)")
+    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"$t=T_{f}$ (final)")
+    axislegend(ax1 ; position = :rt, backgroundcolor = (:grey90, 0.1));
+
+    fig1
+    save(base_path*"heat_supply_vs_emission_2.pdf", fig1, pt_per_unit = 1)    
+end
+
+
 begin
     data10 =  sol[1][1:N]
     data11 =  sol[6][1:N]

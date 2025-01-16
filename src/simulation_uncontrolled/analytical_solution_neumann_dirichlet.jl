@@ -57,7 +57,7 @@ plot(xgrid, temp_dirichlet[:,2])
 
 
 using CairoMakie
-path2folder = "results/figures/simulation/"
+path2folder = "results/figures/simulation/appendix/"
 begin
     filename = path2folder*"neumann_1.pdf"
 
@@ -72,7 +72,7 @@ begin
     axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1), labelsize=30);
     f
 
-    #save(filename, f, pt_per_unit = 1)   
+    save(filename, f, pt_per_unit = 1)   
 end
 
 begin
@@ -90,7 +90,7 @@ begin
     axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1), labelsize=30);
     f
     
-    #save(filename, f, pt_per_unit = 1)   
+    save(filename, f, pt_per_unit = 1)   
 end
 
 
@@ -108,7 +108,7 @@ begin
     Colorbar(f[1, 2], co)
     f    
 
-    #save(filename, f, pt_per_unit = 1)   
+    save(filename, f, pt_per_unit = 1)   
 end
 
 
@@ -126,7 +126,7 @@ begin
     Colorbar(f[1, 2], co)
     f    
 
-    #save(filename, f, pt_per_unit = 1)   
+    save(filename, f, pt_per_unit = 1)   
 end
 
 
