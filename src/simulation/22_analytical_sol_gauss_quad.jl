@@ -100,16 +100,16 @@ using CairoMakie
 base_path = "results/figures/simulation/"
 
 begin
-    fig1 = Figure(size=(800,600),fontsize=26)
+    fig1 = Figure(size=(600,400),fontsize=26)
     ax1 = Axis(fig1[1, 1], xlabel = "Time t in [s]", ylabel = "", 
         xlabelsize = 30, ylabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
         xtickalign = 1., xticksize = 10, 
         xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
         yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
-        ytickalign = 1, yticksize = 10, xlabelpadding = 0)
+        ytickalign = 1, yticksize = 10, xlabelpadding = 0,limits = (nothing, (-0.1, 2)))
     
     ax1.xticks = 0 : 1 : Tf;
-    ax1.yticks = 0 : 0.2 : 2;
+    ax1.yticks = 0 : 0.5 : 2;
   
     lines!(ax1, tgrid, sol_data[:,1];linestyle = :dot,   linewidth = 5, label = L"\tilde{\Theta}_{1}")
     lines!(ax1, tgrid, sol_data[:,2];linestyle = :dash,  linewidth = 5, label = L"\tilde{\Theta}_{2}")
@@ -121,16 +121,16 @@ end
 
 
 begin
-    fig1 = Figure(size=(800,600),fontsize=26)
+    fig1 = Figure(size=(600,400),fontsize=26)
     ax1 = Axis(fig1[1, 1], xlabel = "Time t in [s]", ylabel = "", 
        xlabelsize = 30, ylabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
        xtickalign = 1., xticksize = 10, 
        xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
        yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
-       ytickalign = 1, yticksize = 10, xlabelpadding = 0)
+       ytickalign = 1, yticksize = 10, xlabelpadding = 0,limits = (nothing, (-0.1, 1.5)))
    
        ax1.xticks = 0 : 1 : Tf;
-       ax1.yticks = 0 : 0.2 : 2;
+       ax1.yticks = 0 : 0.5 : 2;
  
     lines!(ax1, tgrid, sol_orig[:,1];linestyle = :dot,   linewidth = 5, label = L"\Theta_{1}")
     lines!(ax1, tgrid, sol_orig[:,2];linestyle = :dash,  linewidth = 5, label = L"\Theta_{2}")

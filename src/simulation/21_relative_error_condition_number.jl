@@ -29,7 +29,7 @@ begin
     data1 = e_rel[:,1]
     data2 = e_rel[:,2]
 
-    fig1 = Figure(size=(800,600),fontsize=26)
+    fig1 = Figure(size=(600,400),fontsize=26)
     ax1 = Axis(fig1[1, 1], xlabel = "Number of Cells", ylabel = "Relative Error", 
         xlabelsize = 30, ylabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
         xtickalign = 1., xticksize = 10, 

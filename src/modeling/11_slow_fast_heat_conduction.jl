@@ -1,5 +1,5 @@
 #=
-Figure 2.2: Comparison of slow (above) and fast (below) heat conduction.
+Comparison of slow (above) and fast (below) heat conduction.
 =#
 
 using Hestia 
@@ -28,16 +28,19 @@ end
 @. θinit[7:N-6] = 1
 
 using OrdinaryDiffEq
-tspan = (0, 20.0)
+Tf = 20.0;
+tsamp = Tf/20;
+tspan = (0, Tf)
 alg = KenCarp5()
 prob= ODEProblem(heat_conduction!,vcat(θinit,θinit),tspan)
-sol = solve(prob,alg, saveat=1.0)
+sol = solve(prob,alg, saveat=tsamp)
 
 xgrid = L/(2N) : L/N : L # Position in x-direction
 base_path = "results/figures/modeling/"
 
 using CairoMakie
 
+#=
 begin
     data10 =  sol[1][1:N]
     data11 =  sol[11][1:N]
@@ -78,4 +81,72 @@ begin
      axislegend(ax2; position = :rt, backgroundcolor = (:grey90, 0.1));
     fig1
     save(base_path*"compare_slow_fast_heat_conduction.pdf", fig1, pt_per_unit = 1)    
+end
+=#
+
+
+
+begin
+    filename = base_path*"heat_conduction_slow.pdf"
+
+    data10 =  sol[1][1:N]
+    data11 =  sol[11][1:N]
+    data12 =  sol[21][1:N]
+    
+    data20 = sol[1][N+1:2N]
+    data21 = sol[11][N+1:2N]
+    data22 = sol[21][N+1:2N]
+    
+
+    fig1 = Figure(size=(600,300),fontsize=26)
+    ax1 = Axis(fig1[1, 1], ylabelsize = 30, xlabel = "Length in [cm]",
+        xlabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
+        xtickalign = 1., xticksize = 10, 
+        xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
+        yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
+        ytickalign = 1, yticksize = 10, xlabelpadding = 0,limits = ((-0.1,11), (-0.1,1.2)))
+    
+    xscale = 100;
+
+
+    # ax1.xticks = θgrid[begin] : 50 : θgrid[end];
+    # ax1.yticks = -16 : 2 :0; #-16e3 : 2e3 : 0;
+    lines!(ax1, xscale*xgrid, data10;linestyle = :dot, linewidth = 5, label = L"t=0")
+    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label = L"t=T_{final}/2")
+    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"t=T_{final}")
+    axislegend(ax1 ; position = :rt, backgroundcolor = (:grey90, 0.1));
+    
+ 
+    fig1
+    save(filename, fig1, pt_per_unit = 1)    
+end
+
+
+
+begin
+    filename = base_path*"heat_conduction_fast.pdf"
+    
+    data10 = sol[1][N+1:2N]
+    data11 = sol[11][N+1:2N]
+    data12 = sol[21][N+1:2N]
+    
+
+    fig1 = Figure(size=(600,300),fontsize=26)
+    ax1 = Axis(fig1[1, 1], ylabelsize = 30, xlabel = "Length in [cm]",
+    xlabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
+    xtickalign = 1., xticksize = 10, 
+    xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
+    yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
+    ytickalign = 1, yticksize = 10, xlabelpadding = 0,limits = ((-0.1,11), (-0.1,1.2)))
+
+    xscale = 100;
+
+    # ax1.xticks = θgrid[begin] : 50 : θgrid[end];
+    # ax1.yticks = -16 : 2 :0; #-16e3 : 2e3 : 0;
+    lines!(ax1, xscale*xgrid, data10;linestyle = :dot, linewidth = 5, label = L"t=0")
+    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label =L"t=T_{final}/2")
+    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"t=T_{final}")
+    axislegend(ax1 ; position = :rt, backgroundcolor = (:grey90, 0.1));
+    fig1
+    save(filename, fig1, pt_per_unit = 1)    
 end

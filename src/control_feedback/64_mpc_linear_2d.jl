@@ -164,9 +164,8 @@ pinit = log(u_init_av)*ones(3*N_mpc) # 8*ones(3*N_mpc)
 
 loss_optim(pinit,[],prob_orig)
 
+#=
 using Optimization, OptimizationOptimJL, ForwardDiff
-
-
 prob_ode = remake(prob_orig)
 loss_fun(u,p)  = loss_optim(u,p,prob_ode)
 optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
@@ -185,6 +184,7 @@ for n=1:N_mpc_samples
 end
 
 p_opt_data = p_data_store
+=#
 
 #=
 # pinit = 8*ones(3*N_mpc)
@@ -194,17 +194,17 @@ p_opt_data = [
  9.51674  8.69653  8.88635  8.63213  8.83793  8.74208  8.79865  8.75205  8.79137  8.77228]
 =#
 
-#=
+
 # u_init_av = (942 / (3*sum(actuator_char[:,1])*Δx₁));
 # pinit = log(u_init_av)*ones(3*N_mpc)
   p_opt_data = [9.30711  9.00171  8.64495  8.84113  8.7703   8.77578  8.77755  8.77696  8.77679  8.7753
      9.07901  7.75712  7.34858  7.6263   7.82564  7.82881  7.83985  7.85068  7.85308  7.85702
      9.30711  9.00171  8.64495  8.84113  8.7703   8.77578  8.77755  8.77696  8.77679  8.7753]
-=#
+
 
 
 #exp.(p_data_store)
-p_store_vec = exp.(reshape(p_data_store,3*N_mpc_samples))
+p_store_vec = exp.(reshape(p_opt_data,3*N_mpc_samples))
 
 
 Tf = t_mpc*N_mpc_samples; 
@@ -220,8 +220,8 @@ sol_demo = solve(prob_demo,alg,p=p_store_vec, saveat=t_samp)
 
 
 n_rep = round(Int64,t_mpc / t_samp)
-u1_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_data_store[1,:])
-u2_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_data_store[2,:])
+u1_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_opt_data[1,:])
+u2_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_opt_data[2,:])
 udata = hcat(u1_in,u2_in,u1_in)
 
 
@@ -243,7 +243,7 @@ begin
     axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1), labelsize=30);
     f
 
-    save(filename, f, pt_per_unit = 1)   
+    # save(filename, f, pt_per_unit = 1)   
 end
 
 
@@ -257,7 +257,7 @@ begin
     
     scale = 1;
     tgrid = sol_demo.t[1:end]
-    lines!(tgrid, scale*yout[1,:], linestyle = :dot,  linewidth = 5, label="Sensor 1")
+    lines!(tgrid, scale*yout[1,:], linestyle = :solid,  linewidth = 5, label="Sensor 1")
     lines!(tgrid, scale*yout[2,:], linestyle = :dash,  linewidth = 5, label="Sensor 2")
 
     ax1.xticks = collect(0:60:300)

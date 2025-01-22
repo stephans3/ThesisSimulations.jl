@@ -114,35 +114,3 @@ begin
 end
 
 
-
-using Plots
-plot(tgrid, y_out_data)
-plot!(tgrid, y_der_data)
-
-
-Θsol = hcat(heat_solution.(tgrid)...)
-
-Θsol[end,:]
-
-using Plots
-plot(tgrid, Θsol[end,:])
-
-
-plot(Θsol[end,1:40])
-
-eN = vcat(zeros(N-1),1)
-eN'*V*diagm(μ)
-
-
-function yout_der(t)
-    return eN'V*diagm(μ)*exp(diagm(μ)*t) * V' * θ0 +  eN'*V*exp(diagm(μ)*t)*V'*E*u_in/Δx
-end
-
-plot(tgrid, yout_der.(tgrid))
-
-yder_data = yout_der.(tgrid)
-
-plot(yder_data)
-plot(yder_data[1:40])
-
-yder_data[100]
