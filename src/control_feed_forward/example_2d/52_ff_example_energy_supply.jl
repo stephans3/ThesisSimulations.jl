@@ -90,12 +90,6 @@ E_needed = ΔU +E_em_approx
 E_necessary_perc = 100*E_in_fbc_approx / E_needed
 
 
-act_sc_inv = 1/(sum(actuation.character[:south])*Δx₁) # Inverse of spatial characteristics of actuator
-E_oc_mean = act_sc_inv * ΔU
-
-u₀ = 1e-1;
-p₂ = p_fbc[2]
-
 function loss_energy(u,p)
     return (E_em_approx + ΔU - act_char_int*u_in_energy(u[1],p[1],u[2]))^2 / Tf
 end
@@ -130,21 +124,12 @@ optf = OptimizationFunction(loss_energy, Optimization.AutoForwardDiff())
 opt_prob = OptimizationProblem(optf, opt_u0, opt_p)
 p13 = Optimization.solve(opt_prob, ConjugateGradient(), callback=callback, maxiters=100)
 
-#=
-p13 = [12.394207145215864
-        9.149105824173542]
-=#
-
-#=
-using Plots
-scatter(log.(store_loss))
-scatter(hcat(store_param...)[1,:])
-=#
 
 
 
 
 
+p₂ = p_fbc[2]
 p1grid = 11.7 : 0.05 : 12.9
 p3grid = 9.09 : 0.01 : 9.3
 
@@ -360,20 +345,3 @@ end
 
 
 
-
-
-
-function opt_energy_implicit!(F, x)
-    #u₀ = 1e-4;
-    p2 = p₂
-    F[1] = input_obc(0,[x[1],p2,x[2]]) - u₀
-    F[2] = E_em_approx + ΔU - act_char_int*u_in_energy(x[1],p2,x[2])
-end
-
-using NLsolve
-
-xinit = opt_u0
-sol_nl_em_approx = nlsolve(opt_energy_implicit!, xinit)
-#p1_open,p3_open = 
-p_nl_11,p_nl_33 = sol_nl_em_approx.zero
-u_in_energy(p_nl_11,p₂,p_nl_33)
