@@ -1,4 +1,6 @@
 
+
+
 θvec = collect(300:50:500)
 M_temp = mapreduce(z-> [1  z  z^2 z^3 z^4], vcat, θvec)
 
@@ -236,10 +238,17 @@ A_east = 1e-2  # W*H;
 A_south = 1e-2 # L*H;
 A_top = 4e-2   # L*W;
 
+ΔΘ = 5; # Temperature offset
+ΔP = c*ρ*ΔΘ*(L*W*H) / t_mpc
 Pem_approx =   (A_east + A_south + A_top)*emit(500,emission) 
-actuator_char = getCharacteristics(actuation, :underside)[1]
-u_init_av = abs(Pem_approx) / (sum(actuator_char)*Δx₁*Δx₂)
-pinit = log(u_init_av)*ones(Nu*N_mpc) 
+
+act_int = sum(actuation.character[:underside])*Δx₁*Δx₂
+u_init_av1 = (abs(Pem_approx) + ΔP) / act_int
+u_init_av2 = (abs(Pem_approx)) / act_int
+
+pinit = vcat(log(u_init_av1)*ones(Nu),log(u_init_av2)*ones(Nu*(N_mpc-1)))
+# pinit = log(u_init_av)*ones(Nu*N_mpc) 
+# loss_optim(10*ones(Nu*N_mpc),[],prob_orig)
 
 loss_optim(pinit,[],prob_orig)
 
@@ -250,9 +259,10 @@ optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
 opt_prob = OptimizationProblem(optf, pinit, [0])
 
 n=1
-    p_opt = Optimization.solve(opt_prob, ConjugateGradient(), maxiters=3)
-    sol_temp = solve(prob_ode,alg,p=exp.(Array(p_opt)), save_everystep=false)
-    prob_ode = remake(prob_ode; u0 = sol_temp[:,end])
+p_opt = Optimization.solve(opt_prob, ConjugateGradient(), maxiters=3)
+sol_temp = solve(prob_ode,alg,p=exp.(Array(p_opt)), save_everystep=false)
+
+prob_ode = remake(prob_ode; u0 = sol_temp[:,end])
     p_opt_data = Array(p_opt)
     p_data_store[:,n] = p_opt_data[1:3]
     p_new = vcat(p_opt_data[4:9],p_opt_data[7:9])
