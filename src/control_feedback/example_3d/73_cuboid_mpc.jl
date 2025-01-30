@@ -22,7 +22,7 @@ N₃ = 5;
 Nc = N₁*N₂*N₃ 
 Δx₁ = L/N₁
 Δx₂ = W/N₂
-Δx₃ = W/N₃
+Δx₃ = H/N₃
 
 
 using Hestia 
@@ -75,47 +75,17 @@ function heat_conduction_heat_up!(dθ, θ, param, t)
     diffusion!(dθ, θ, cuboid, property, boundary, actuation, u_in)
 end
 
-p_opt =
-[12.920528591175692
-  2.055521226797314
-  7.907112254486979
- 12.980761600310702
-  2.0513665968206873
-  8.426793438967957
- 12.961190624776055
-  2.0691384801460204
-  8.562627674914927]
+p_opt=
+[12.894929657082693
+  2.0554514321527058
+  7.682015031653755
+ 12.967392692355489
+  2.0538122351888752
+  8.300509555164869
+ 12.943662543893003
+  2.066455923317032
+  8.459445553931738]
 
-
-#=
-# New:
-p_opt =
-[12.920528591175692
-  2.055521226797314
-  7.907112254486979
- 12.980761600310702
-  2.0513665968206873
-  8.426793438967957
- 12.961190624776055
-  2.0691384801460204
-  8.562627674914927]
-=#
-
-#=
-# Old:
-p_opt = [13.010951664331811
-        1.9765036457312297
-        8.160716631530311
-        12.892699280408907
-        2.153289753582373
-        8.203973434811285
-        12.911826304389534
-        2.145243910846501
-        8.299341977569908
-        12.978783755664848
-        1.9883521480910786
-        8.285147497006298]
-=#
 
 p_ff = vcat(p_opt,p_opt[1:3])
 T_ff = 1200;
@@ -131,8 +101,6 @@ alg = KenCarp5()
 prob_ff = ODEProblem(heat_conduction_heat_up!,θinit_ff,tspan_ff,p_ff)
 sol_ff = solve(prob_ff,alg,p=p_ff, saveat=t_samp)
 
-using Plots
-plot(sol_ff)
 
 
 
@@ -179,14 +147,12 @@ using OrdinaryDiffEq
 
 pinit = vcat(5e4*ones(Nu), 3e4*ones(Nu), 1e4*ones(Nu))
 
-#5e4*ones(Nu*N_mpc) # vcat([21e3,22e3,23e3,24e3], [4e3,3e3,2e3,1e3],[6e3,7e3,8e3,9e3])
-
 t_samp = 10.0
 alg = KenCarp5()
 prob_orig = ODEProblem(heat_conduction_mpc!,θinit,tspan)
 sol_mpc_test = solve(prob_orig,alg,p=pinit, saveat=t_mpc)
 
-plot(sol_mpc_test)
+# plot(sol_mpc_test)
 
 
 ### Sensor ###
@@ -232,7 +198,7 @@ end
 # N_mpc = 3; # MPC control horizon
 
 N_mpc_samples = 10
-p_data_store = zeros(3,N_mpc_samples);
+p_data_store = zeros(Nu,N_mpc_samples);
 
 A_east = 1e-2  # W*H;
 A_south = 1e-2 # L*H;
@@ -251,41 +217,22 @@ pinit = vcat(log(u_init_av1)*ones(Nu),log(u_init_av2)*ones(Nu*(N_mpc-1)))
 # loss_optim(10*ones(Nu*N_mpc),[],prob_orig)
 
 loss_optim(pinit,[],prob_orig)
+# pinit[Nu*(N_mpc-1)+1:end]
 
 using Optimization, OptimizationOptimJL, ForwardDiff
 prob_ode = remake(prob_orig)
 loss_fun(u,p)  = loss_optim(u,p,prob_ode)
 optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
 opt_prob = OptimizationProblem(optf, pinit, [0])
-
-n=1
-p_opt = Optimization.solve(opt_prob, ConjugateGradient(), maxiters=3)
-sol_temp = solve(prob_ode,alg,p=exp.(Array(p_opt)), save_everystep=false)
-
-prob_ode = remake(prob_ode; u0 = sol_temp[:,end])
-    p_opt_data = Array(p_opt)
-    p_data_store[:,n] = p_opt_data[1:3]
-    p_new = vcat(p_opt_data[4:9],p_opt_data[7:9])
-
-    loss_fun(u,p) = loss_optim(u,p,prob_ode)
-    optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
-    opt_prob = remake(opt_prob; f=optf, u0=p_new)
-
-
 
 #=
-using Optimization, OptimizationOptimJL, ForwardDiff
-prob_ode = remake(prob_orig)
-loss_fun(u,p)  = loss_optim(u,p,prob_ode)
-optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
-opt_prob = OptimizationProblem(optf, pinit, [0])
 for n=1:N_mpc_samples
     p_opt = Optimization.solve(opt_prob, ConjugateGradient(), maxiters=3)
     sol_temp = solve(prob_ode,alg,p=exp.(Array(p_opt)), save_everystep=false)
     prob_ode = remake(prob_ode; u0 = sol_temp[:,end])
     p_opt_data = Array(p_opt)
-    p_data_store[:,n] = p_opt_data[1:3]
-    p_new = vcat(p_opt_data[4:9],p_opt_data[7:9])
+    p_data_store[:,n] = p_opt_data[1:Nu]
+    p_new = vcat(p_opt_data[Nu+1:end],pinit[Nu*(N_mpc-1)+1:end])
 
     loss_fun(u,p) = loss_optim(u,p,prob_ode)
     optf = OptimizationFunction(loss_fun, Optimization.AutoForwardDiff())
@@ -294,3 +241,227 @@ end
 
 p_opt_data = p_data_store
 =#
+
+#=
+p_opt_data=
+[10.8529  9.47944  9.07436  9.42223  9.43506  9.40945   9.31975  9.21962  9.30498  9.31311
+11.5205  9.37013  9.57602  9.68577  9.77107  9.75241  10.1366   9.5841   9.77754  9.67058
+10.1589  9.56055  8.15368  8.53608  8.78853  8.93208   8.73112  8.51229  8.65838  8.79611
+10.8314  9.48784  9.0854   9.42571  9.43646  9.40954   9.31809  9.21926  9.30504  9.31356]
+=#
+
+
+p_opt_data=
+[10.8529  9.47944  9.07436  9.42223  9.43506  9.40945   9.31975  9.21962  9.30498  9.31311
+11.5205  9.37013  9.57602  9.68577  9.77107  9.75241  10.1366   9.5841   9.77754  9.67058
+10.1589  9.56055  8.15368  8.53608  8.78853  8.93208   8.73112  8.51229  8.65838  8.79611
+10.8314  9.48784  9.0854   9.42571  9.43646  9.40954   9.31809  9.21926  9.30504  9.31356]
+
+
+p_store_vec = exp.(reshape(p_opt_data,Nu*N_mpc_samples))
+Tf = t_mpc*N_mpc_samples; 
+tspan = (0.0, Tf)
+θinit = prob_orig.u0
+
+t_samp = 1.0
+alg = KenCarp5()
+prob_demo = ODEProblem(heat_conduction_mpc!,θinit,tspan)
+sol_demo = solve(prob_demo,alg,p=p_store_vec, saveat=t_samp)
+θsol = Array(sol_demo)
+
+
+
+using DelimitedFiles;
+path2folder_export = "results/data/"
+filename = "example_cuboid_mpc.csv"
+path2file_export = path2folder_export * filename
+
+data_export = Array(sol_demo)
+open(path2file_export, "w") do io
+    writedlm(io, data_export, ',')
+end;
+
+
+n_rep = round(Int64,t_mpc / t_samp)
+u1_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_opt_data[1,:])
+u2_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_opt_data[2,:])
+u3_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_opt_data[3,:])
+u4_in = mapreduce(p -> exp(p)*ones(n_rep),vcat, p_opt_data[4,:])
+udata = hcat(u1_in,u2_in,u3_in,u4_in)
+
+
+
+using CairoMakie
+path2folder = "results/figures/controlled/cuboid_example/"
+begin
+    filename = path2folder*"cuboid_mpc_input.pdf"
+
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = "Time in [s]", ylabel = L"Input $\times 10^{3}$", xlabelsize = 30, ylabelsize = 30,
+    xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1, yminorgridvisible = true,)
+    
+    ax1.xticks = collect(0:60:300)
+    ax1.yticks = collect(0:20:100);
+    scale = 1e-3;
+    tgrid = sol_demo.t[1:end-1]
+    lines!(tgrid, scale*udata[:,1], linestyle = :solid,  linewidth = 5, label="Actuator 1")
+    lines!(tgrid, scale*udata[:,2], linestyle = :dash,  linewidth = 5, label="Actuator 2")
+    lines!(tgrid, scale*udata[:,3], linestyle = :dot,  linewidth = 5, label="Actuator 3")
+    lines!(tgrid, scale*udata[:,4], linestyle = :dashdot,  linewidth = 5, label="Actuator 4")
+
+    axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    f
+
+    save(filename, f, pt_per_unit = 1)   
+end
+
+
+begin
+    yout = C*θsol
+    filename = path2folder*"cuboid_mpc_output.pdf"
+
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = "Time in [s]", ylabel = L"Output in [K] $~$", xlabelsize = 30, ylabelsize = 30,
+    xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,limits = (nothing, (493, 498))) #, 
+    
+    scale = 1;
+    tgrid = sol_demo.t[1:end]
+    lines!(tgrid, scale*yout[1,:], linestyle = :solid,  linewidth = 5, label="Sensor 1")
+    lines!(tgrid, scale*yout[2,:], linestyle = :dash,  linewidth = 5, label="Sensor 2")
+    lines!(tgrid, scale*yout[3,:], linestyle = :dot,  linewidth = 5, label="Sensor 3")
+    lines!(tgrid, scale*yout[4,:], linestyle = :dashdot,  linewidth = 5, label="Sensor 4")
+
+    ax1.xticks = collect(0:60:300)
+    #
+    axislegend(; position = :rb, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    f
+    
+    save(filename, f, pt_per_unit = 1)   
+end
+
+
+# Emitted Power
+
+n_ts = length(sol_demo.t)
+θsol_2d = reshape(θsol, N₁,N₂,N₃,n_ts)
+ϕem_E = map(θ-> emit(θ,emission), θsol_2d[N₁,1:N₂,1:N₃,:])
+ϕem_S = map(θ-> emit(θ,emission), θsol_2d[1:N₁,1,1:N₃,:])
+ϕem_T = map(θ-> emit(θ,emission), θsol_2d[1:N₁,1:N₂,N₃,:])
+
+Pem_E = Δx₂*Δx₃*sum(ϕem_E,dims=(1,2))[:]
+Pem_S = Δx₁*Δx₃*sum(ϕem_S,dims=(1,2))[:]
+Pem_T = Δx₁*Δx₂*sum(ϕem_T,dims=(1,2))[:]
+
+Pem = Pem_E + Pem_S + Pem_T
+
+
+# Supplied power
+act_char = reshape(actuation.character[:underside], 5, 5, 4)
+Pin_per_act = Δx₁*Δx₂*mapreduce( n-> sum(act_char[:,:,n])*udata[:,n],hcat,1:Nu)
+Pin_total = sum(Pin_per_act,dims=2)[:]
+
+
+
+begin
+    filename = path2folder*"cuboid_mpc_power.pdf"
+
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = "Time in [s]", ylabel = L"Power in [W] $~$", xlabelsize = 30, ylabelsize = 30,
+    xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,) #
+    
+    scale = 1;
+    tgrid = sol_demo.t[1:end-1]
+    lines!(tgrid, scale*abs.(Pem[1:end-1]), linestyle = :solid,  linewidth = 5, label="Abs. Emitted")
+    lines!(tgrid, scale*Pin_total, linestyle = :dash,  linewidth = 5, label="Supplied")
+
+    ax1.yticks = collect(100:100:700) # [0, 200, 400, 600, 800, 1000];
+    ax1.xticks = collect(0:60:300)
+    # lines!(num_iterations, pars_data[:,1], linestyle = :dash,  linewidth = 5)
+    # lines!(num_iterations, pars_data[:,2], linestyle = :dash,  linewidth = 5)
+    axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    f
+
+    save(filename, f, pt_per_unit = 1)   
+end
+
+
+x1grid = Δx₁/2 : Δx₁ : L
+x2grid = Δx₂/2 : Δx₂ : W
+x3grid = Δx₃/2 : Δx₃ : H
+
+
+begin
+    data = θsol_2d[:,:,1,end]
+    filename = path2folder*"cuboid_mpc_bottomview.pdf"
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = L"Length $x_{1}$ in [cm]", ylabel = L"Width $x_{2}$ in [cm]", xlabelsize = 30, ylabelsize = 30)
+    tightlimits!(ax1)
+    # hidedecorations!(ax1)
+    x1grid_cm = 100*x1grid
+    x2grid_cm = 100*x2grid
+    co = contourf!(ax1, x1grid_cm, x2grid_cm, data, colormap=:plasma, levels = 495:0.5:503) #levels = range(0.0, 10.0, length = 20))
+    #ax1.xticks = 0 : 5 : 30;
+    #ax1.yticks = 0 : 1 : 5;
+    Colorbar(f[1, 2], co ,  ticks = collect(495:2:503))
+    f    
+
+    save(filename, f, pt_per_unit = 1)   
+end
+
+begin
+    data = θsol_2d[:,:,end,end]
+    filename = path2folder*"cuboid_mpc_topview.pdf"
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = L"Length $x_{1}$ in [cm]", ylabel = L"Width $x_{2}$ in [cm]", xlabelsize = 30, ylabelsize = 30)
+    tightlimits!(ax1)
+    # hidedecorations!(ax1)
+    x1grid_cm = 100*x1grid
+    x2grid_cm = 100*x2grid
+    co = contourf!(ax1, x1grid_cm, x2grid_cm, data, colormap=:plasma, levels = 495:0.5:503) #levels = range(0.0, 10.0, length = 20))
+    #ax1.xticks = 0 : 5 : 30;
+    #ax1.yticks = 0 : 1 : 5;
+    Colorbar(f[1, 2], co ,  ticks = collect(495:2:503))
+    f    
+
+    save(filename, f, pt_per_unit = 1)   
+end
+
+
+begin
+    data = θsol_2d[:,1,:,end]
+    filename = path2folder*"cuboid_mpc_side_south.pdf"
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = L"Length $x_{1}$ in [cm]", ylabel = L"Height $x_{3}$ in [cm]", xlabelsize = 30, ylabelsize = 30)
+    tightlimits!(ax1)
+    # hidedecorations!(ax1)
+    x1grid_cm = 100*x1grid
+    x3grid_cm = 100*x3grid
+    co = contourf!(ax1, x1grid_cm, x3grid_cm, data, colormap=:plasma, levels = 495:0.5:503) #levels = range(0.0, 10.0, length = 20))
+    #ax1.xticks = 0 : 5 : 30;
+    ax1.yticks = 1 : 5;
+    Colorbar(f[1, 2], co ,  ticks = collect(495:2:503))
+    f    
+
+    save(filename, f, pt_per_unit = 1)   
+end
+
+
+
+begin
+    data = θsol_2d[end,:,:,end]
+    filename = path2folder*"cuboid_mpc_side_east.pdf"
+    f = Figure(size=(600,400),fontsize=26)
+    ax1 = Axis(f[1, 1], xlabel = L"Width $x_{2}$ in [cm]", ylabel = L"Height $x_{3}$ in [cm]", xlabelsize = 30, ylabelsize = 30)
+    tightlimits!(ax1)
+    # hidedecorations!(ax1)
+    x2grid_cm = 100*x2grid
+    x3grid_cm = 100*x3grid
+    co = contourf!(ax1, x2grid_cm, x3grid_cm, data, colormap=:plasma, levels = 495:0.5:503) #levels = range(0.0, 10.0, length = 20))
+    #ax1.xticks = 0 : 5 : 30;
+    ax1.yticks = 1 : 5;
+    Colorbar(f[1, 2], co ,  ticks = collect(495:2:503))
+    f    
+
+    save(filename, f, pt_per_unit = 1)   
+end
+
