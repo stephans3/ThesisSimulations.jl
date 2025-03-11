@@ -57,13 +57,13 @@ base_path = "results/figures/modeling/"
 using CairoMakie
 
 begin
-    fig1 = Figure(size=(800,600),fontsize=26)
+    fig1 = Figure(size=(600,400),fontsize=26)
     ax1 = Axis(fig1[1, 1], xlabel = "Time in [s]", ylabel = "Temperature in [K]", 
         xlabelsize = 30, ylabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
         xtickalign = 1., xticksize = 10, 
         xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
         yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
-        ytickalign = 1, yticksize = 10, xlabelpadding = 0)
+        ytickalign = 1, yticksize = 10, xlabelpadding = 0, limits = (nothing, (570, 601)))
     
     ax1.xticks = 0: 500 : tspan[2];
     ax1.yticks = 570: 5 : 600;
@@ -90,16 +90,16 @@ Phi_rad_data *= 10^(-3)
 Phi_total_data *= 10^(-3) 
 
 begin
-    fig1 = Figure(size=(800,600),fontsize=26)
+    fig1 = Figure(size=(600,400),fontsize=26)
     ax1 = Axis(fig1[1, 1], xlabel = "Temperature in [K]", ylabel = L"Emissions $\times 10^{3}$ in $\left[\frac{W}{m^2}\right]$",
         xlabelsize = 30, ylabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
         xtickalign = 1., xticksize = 10, 
         xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
         yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
-        ytickalign = 1, yticksize = 10, xlabelpadding = 0)
+        ytickalign = 1, yticksize = 10, xlabelpadding = 0,limits = (nothing, (-9, 0.5)))
     
     ax1.xticks = θgrid[begin] : 100 : θgrid[end];
-    ax1.yticks = -7 : 1 :0; #-16e3 : 2e3 : 0;
+    ax1.yticks = -8 : 2 :0; #-16e3 : 2e3 : 0;
     lines!(θgrid, Phi_trans_data;linestyle = :dot, linewidth = 5, label = "Only heat transfer")
     lines!(θgrid, Phi_rad_data;linestyle = :dash, linewidth = 5, label="Only heat radiation")
     lines!(θgrid, Phi_total_data; linewidth = 5, label="Heat transfer and radiation")

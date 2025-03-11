@@ -149,6 +149,10 @@ function heat_conduction!(dθ, θ, param, t)
 end
 
 
+p_energy = [13.065247340633551
+             2.070393374741201
+             9.076210596231089]
+
 pinit = p_energy
 Tf = 1200;
 tspan = (0.0, Tf)
@@ -157,11 +161,7 @@ tspan = (0.0, Tf)
 dΘ = similar(θinit)
 heat_conduction!(dΘ,θinit,pinit,0)
 
-#=
-p_energy = [13.065247340633551
-             2.070393374741201
-             9.076210596231089]
-=#
+
 
 
 # Δt = 1e-2               # Sampling time
@@ -219,7 +219,7 @@ begin
     axislegend(; position = :rb, backgroundcolor = (:grey90, 0.1), labelsize=30);
     f
     
-    save(filename, f, pt_per_unit = 1)   
+    # save(filename, f, pt_per_unit = 1)   
 end
 
 begin
@@ -236,7 +236,7 @@ begin
     lines!(tgrid, yout[2,tstart:end], linestyle = :dash,  linewidth = 5, label="Sensor 2")
     lines!(tgrid, yout[3,tstart:end], linestyle = :dot,  linewidth = 5, label="Sensor 3")
     lines!(tgrid, yout[4,tstart:end], linestyle = :dashdot,  linewidth = 5, label="Sensor 4")
-    scatter!(sol.t[81:10:end], ref_data[1,81:10:end];  markersize = 15, marker = :diamond, color=:black, label = "Reference")
+    scatter!(sol.t[81:3:end], ref_data[1,81:3:end];  markersize = 15, marker = :diamond, color=:black, label = "Reference")
 
     ax1.xticks = collect(0:100:1200)
 #    ax1.yticks = [499.2, 499.4, 499.6, 499.8, 500];

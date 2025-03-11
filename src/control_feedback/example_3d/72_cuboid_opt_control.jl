@@ -189,8 +189,42 @@ loss_optim(p_opt, [0])
 sol_oc = solve(prob,alg,p=p_opt, saveat=t_samp)
 y_oc = C*Array(sol_oc)
 
+input1(t) = input_obc(t,p_opt[1:3])
+input2(t) = input_obc(t,p_opt[4:6])
+input3(t) = input_obc(t,p_opt[7:9])
+
+input1_data = input1.(sol_oc.t)
+input2_data = input2.(sol_oc.t)
+input3_data = input3.(sol_oc.t)
+
 using CairoMakie
 path2folder = "results/figures/controlled/cuboid_example/"
+
+
+begin   
+    filename = path2folder*"cuboid_opt_control_input.pdf"
+
+    f = Figure(size=(600,400),fontsize=26)
+
+    ax1 = Axis(f[1, 1], xlabel = "Time t in [s]", ylabel=L"Input $\times 10^5$",
+    xlabelsize = 30,  ylabelsize = 30,
+    xgridstyle = :dash, ygridstyle = :dash,)
+
+    scale = 1e-5;
+
+    #ax1.xticks = 0 : 200 : 1200;
+    #ax1.yticks = 0 : 2.5 : 10;
+    tgrid = sol_oc.t[1:end]
+    lines!(tgrid, scale*input1_data;   linestyle = :solid,   linewidth = 5, label="Input 1")
+    lines!(tgrid, scale*input2_data;   linestyle = :dash,   linewidth = 5, label="Input 2")
+    lines!(tgrid, scale*input3_data;   linestyle = :dot,   linewidth = 5, label="Input 3")
+    axislegend(; position = :lt, backgroundcolor = (:grey90, 0.1), labelsize=30);
+    
+    f  
+    #save(filename, f, pt_per_unit = 1)   
+end
+
+
 begin
     filename = path2folder*"cuboid_opt_control_output_1.pdf"
 

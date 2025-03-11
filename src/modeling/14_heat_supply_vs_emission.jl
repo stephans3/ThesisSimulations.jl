@@ -50,11 +50,12 @@ begin
     #ax1.xticks = Nx_arr;
     #ax1.yticks = -3: 1 : 3;
     xscale = 100;
+    
     lines!(ax1, xscale*xgrid, data10;linestyle = :dot, linewidth = 5, label = L"$t=0$ (initial)")
-    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label = L"$t=\frac{T_{f}}{2}$ (proceeding)")
-    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"$t=T_{f}$ (final)")
+    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label = L"$t=\frac{T_{final}}{2}$ (half)")
+    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"$t=T_{final}$ (final)")
+    
     axislegend(ax1 ; position = :rt, backgroundcolor = (:grey90, 0.1));
-
     fig1
     save(base_path*"heat_supply_vs_emission_1.pdf", fig1, pt_per_unit = 1)    
 end
@@ -74,8 +75,8 @@ begin
     #ax1.yticks = -3: 1 : 3;
     xscale = 100;
     lines!(ax1, xscale*xgrid, data10;linestyle = :dot, linewidth = 5, label = L"$t=0$ (initial)")
-    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label = L"$t=\frac{T_{f}}{2}$ (proceeding)")
-    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"$t=T_{f}$ (final)")
+    lines!(ax1, xscale*xgrid, data11;linestyle = :dash, linewidth = 5, label = L"$t=\frac{T_{final}}{2}$ (half)")
+    lines!(ax1, xscale*xgrid, data12;linestyle = :solid, linewidth = 5, label=L"$t=T_{final}$ (final)")
     axislegend(ax1 ; position = :rt, backgroundcolor = (:grey90, 0.1));
 
     fig1

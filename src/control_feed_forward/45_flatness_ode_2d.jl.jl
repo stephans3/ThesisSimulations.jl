@@ -208,7 +208,7 @@ b1 = (Δx₂*c*ρ)
 # Scenario: 
 # 1 = faulty actuators / with spatial characteristics  
 # 2 = faulty sensors / with spatial characteristics
-sc = 2
+sc = 1
 
 if sc==1
     Bd = diagm([1,0.9,0.8])/ b1;
@@ -319,10 +319,10 @@ begin
     sol_data = sol[N₁*(N₂-1)+1:Nc,:]'
     
 
-    # f = Figure(size=(1300,400),fontsize=26)
-    f = Figure(size=(600,900),fontsize=26)
+    f = Figure(size=(1300,400),fontsize=26)
+    # f = Figure(size=(600,900),fontsize=26)
 
-    ax1 = Axis(f[1, 1], xlabel = "", ylabel = L"Input $\times 10^4$", 
+    ax1 = Axis(f[1, 1], xlabel = "Time t in [s]", ylabel = L"Input $\times 10^4$", 
     xlabelsize = 30,  ylabelsize = 30,
     xgridstyle = :dash, ygridstyle = :dash,)
 
@@ -335,7 +335,7 @@ begin
     axislegend(; position = :lt, backgroundcolor = (:grey90, 0.1), labelsize=30);
 
 
-    ax2 = Axis(f[2, 1], xlabel = "Time t in [s]", ylabel = "Temperature", 
+    ax2 = Axis(f[1, 2], xlabel = "Time t in [s]", ylabel = "Temperature", 
                 xlabelsize = 30,  ylabelsize = 30,
                 xgridstyle = :dash, ygridstyle = :dash,)
 

@@ -42,7 +42,7 @@ end
 using OrdinaryDiffEq
 θinit = 300ones(N)
 θinit[1:round(Int,N/2)] .= 700 
-tspan = (0.0, 600)
+tspan = (0.0, 800)
 tsave = 2.0;
 alg = KenCarp5()
 prob_dynamic = ODEProblem(heat_conduction_dynamic!,θinit,tspan)
@@ -61,22 +61,22 @@ begin
     data4 = sol_dynamic[31,:]
     data5 = sol_dynamic[40,:]
 
-    fig1 = Figure(size=(800,600),fontsize=26)
+    fig1 = Figure(size=(600,400),fontsize=24)
     ax1 = Axis(fig1[1, 1], xlabel = "Time in [s]", ylabel = "Temperature in [K]", 
         xlabelsize = 30, ylabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
         xtickalign = 1., xticksize = 10, 
         xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
         yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
-        ytickalign = 1, yticksize = 10, xlabelpadding = 0)
+        ytickalign = 1, yticksize = 10, xlabelpadding = 0,limits = (nothing, (270, 810)))
     
     ax1.xticks = 0: 100 : tspan[2];
-    ax1.yticks = 300: 100 : 700;
+    ax1.yticks = 300: 100 : 800;
   
-    lines!(ax1, tgrid, data1;linestyle = :solid, linewidth = 5, label = "x=0 (Left)")
-    lines!(ax1, tgrid, data2;linestyle = :dash, linewidth = 5, label = "x=1/4 L")
-    lines!(ax1, tgrid, data3;linestyle = :dot, linewidth = 5, label = "x=1/2 L (Center)")
+    lines!(ax1, tgrid, data1;linestyle = :solid, linewidth = 5, label = "x=0")
+    lines!(ax1, tgrid, data2;linestyle = :dash, linewidth = 5, label = "x=L/4")
+    lines!(ax1, tgrid, data3;linestyle = :dot, linewidth = 5, label = "x=L/2")
     lines!(ax1, tgrid, data4;linestyle = :dash, linewidth = 5, label = "x=3/4 L")
-    lines!(ax1, tgrid, data5;linestyle = :solid, linewidth = 5, label="x=L (Right)")
+    lines!(ax1, tgrid, data5;linestyle = :solid, linewidth = 5, label="x=L")
     axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1));
     fig1
     save(base_path*"dynamic_heat_conduction_position.pdf", fig1, pt_per_unit = 1)    
@@ -91,21 +91,21 @@ begin
     data4 = sol_dynamic[:,101]
     data5 = sol_dynamic[:,end]
 
-    fig1 = Figure(size=(800,600),fontsize=26)
-    ax1 = Axis(fig1[1, 1], xlabel = "Position x in [m]", ylabel = "Temperature in [K]", 
+    fig1 = Figure(size=(600,400),fontsize=24)
+    ax1 = Axis(fig1[1, 1], xlabel = "Position x in [cm]", ylabel = "Temperature in [K]", 
         xlabelsize = 30, ylabelsize = 30, xgridstyle = :dash, ygridstyle = :dash, 
         xtickalign = 1., xticksize = 10, 
         xminorgridvisible = true, xminorticksvisible = true, xminortickalign = 1,
         yminorgridvisible = true, yminorticksvisible = true, yminortickalign = 1,
-        ytickalign = 1, yticksize = 10, xlabelpadding = 0)
-    
-    ax1.xticks = 0: L/4 : L;
-    ax1.yticks = 300: 100 : 700;
-    lines!(ax1, xgrid, data1;linestyle = :dot, linewidth = 5, label = "t=0 s")
-    lines!(ax1, xgrid, data2;linestyle = :solid, linewidth = 5, label = "t=50 s")
-    lines!(ax1, xgrid, data3;linestyle = :dash, linewidth = 5, label = "t=100 s")
-    lines!(ax1, xgrid, data4;linestyle = :solid, linewidth = 5, label = "t=200 s")
-    lines!(ax1, xgrid, data5;linestyle = :dash, linewidth = 5, label="t=600 s")
+        ytickalign = 1, yticksize = 10, xlabelpadding = 0,limits = (nothing, (270, 810)))
+    xscale = 100;
+    ax1.xticks = 0: xscale*(L/4) : xscale*L;
+    ax1.yticks = 300: 100 : 800;
+    lines!(ax1, xscale*xgrid, data1;linestyle = :dot, linewidth = 5, label = "t=0 s")
+    lines!(ax1, xscale*xgrid, data2;linestyle = :solid, linewidth = 5, label = "t=50 s")
+    lines!(ax1, xscale*xgrid, data3;linestyle = :dash, linewidth = 5, label = "t=100 s")
+    lines!(ax1, xscale*xgrid, data4;linestyle = :solid, linewidth = 5, label = "t=200 s")
+    lines!(ax1, xscale*xgrid, data5;linestyle = :dash, linewidth = 5, label="t=800 s")
     axislegend(; position = :rt, backgroundcolor = (:grey90, 0.1));
     fig1
     save(base_path*"dynamic_heat_conduction_time.pdf", fig1, pt_per_unit = 1)    
